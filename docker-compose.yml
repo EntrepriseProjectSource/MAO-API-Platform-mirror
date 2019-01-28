@@ -1,0 +1,91 @@
+# Run docker-compose build
+# Run docker-compose up
+# Live long and prosper
+
+version: '3.1'
+services:
+    apache:
+        build: .docker/apache
+        container_name: sf3_apache
+        ports:
+          - 82:80
+        volumes:
+          - .docker/config/vhosts:/etc/apache2/sites-enabled
+          - ${SYMFONY_APP}:/home/wwwroot/sf3
+        depends_on:
+#          - engine-mao-prm
+          - php
+
+    mariadb-mao-prm:
+      #    image: percona:5.7
+        image: mariadb
+        ports:
+        - "3309:3306"
+        #    container_name: percona-mao
+        container_name: mariadb-mao-prm
+        environment:
+        - "MYSQL_ROOT_PASSWORD=dev"
+        - "MYSQL_DATABASE=prm_database"
+        - "MYSQL_USER=admin"
+        - "MYSQL_PASSWORD=admin"
+        networks:
+        - default
+
+    php:
+        build: .docker/php
+        container_name: sf3_php
+        volumes:
+          - ${SYMFONY_APP}:/home/wwwroot/sf3
+        environment:
+          - maildev_host=sf3_maildev
+        depends_on:
+          - maildev
+          - mariadb-mao-prm
+
+    phpmyadmin:
+        image: phpmyadmin/phpmyadmin
+        container_name: sf3_phpmyadmin
+        restart: always
+        ports:
+            - 8080:80
+        links:
+            - mariadb-mao-prm
+        environment:
+          PMA_HOST: mysql
+
+    maildev:
+        image: djfarrelly/maildev
+        container_name: sf3_maildev
+        ports:
+          - 8001:80
+
+    nginx:
+      container_name: angular_nginx
+      build: .docker/nginx
+      volumes:
+        - ${ANGULAR_APP}/dist/Angular-project:/usr/share/nginx/html
+      ports:
+        - "81:80"
+        - "443:443"
+
+    node:
+        build: .docker/node
+        container_name: angular_node_cli
+        ports:
+            - 4200:4200
+        volumes:
+            - ${ANGULAR_APP}:/home/node/app/frontend
+        tty: true
+        command:
+            - /bin/sh
+            - -c
+            - |
+                cd /home/node/app/frontend && npm install && npm start
+        expose:
+            - "4200"
+
+networks:
+    default:
+        external:
+            name: docap-api-client-stacks
+
