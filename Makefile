@@ -9,6 +9,9 @@ install:
 update-project:
 	docker exec -ti sf3_php bash -c 'composer update'
 
+ch:
+	sudo chown -R ${USER}:${USER} ./
+
 cr:
 	docker exec -ti sf3_php bash -c 'chmod -R 777 var/'
 

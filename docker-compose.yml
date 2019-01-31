@@ -1,31 +1,28 @@
-# Run docker-compose build
-# Run docker-compose up
-# Live long and prosper
 
 version: '3.1'
 services:
     apache:
         build: .docker/apache
-        container_name: sf3_apache
+        container_name: sf4_apache
         ports:
-          - 82:80
+          - 8012:80
         volumes:
           - .docker/config/vhosts:/etc/apache2/sites-enabled
-          - ${SYMFONY_APP}:/home/wwwroot/sf3
+          - ${SYMFONY_APP}:/home/wwwroot/sf4
         depends_on:
 #          - engine-mao-prm
           - php
 
-    mariadb-mao-prm:
-      #    image: percona:5.7
-        image: mariadb
+    percona-mao-certif:
+        image: percona:5.7
+#        image: mariadb
         ports:
-        - "3309:3306"
+        - "3310:3306"
         #    container_name: percona-mao
-        container_name: mariadb-mao-prm
+        container_name: percona-mao-certif
         environment:
         - "MYSQL_ROOT_PASSWORD=dev"
-        - "MYSQL_DATABASE=prm_database"
+        - "MYSQL_DATABASE=mao_database"
         - "MYSQL_USER=admin"
         - "MYSQL_PASSWORD=admin"
         networks:
@@ -33,59 +30,27 @@ services:
 
     php:
         build: .docker/php
-        container_name: sf3_php
+        container_name: sf4_php
         volumes:
-          - ${SYMFONY_APP}:/home/wwwroot/sf3
+          - ${SYMFONY_APP}:/home/wwwroot/sf4
         environment:
-          - maildev_host=sf3_maildev
+          - maildev_host=sf4_maildev
         depends_on:
-          - maildev
-          - mariadb-mao-prm
+          - percona-mao-certif
 
     phpmyadmin:
         image: phpmyadmin/phpmyadmin
-        container_name: sf3_phpmyadmin
+        container_name: sf4_phpmyadmin
         restart: always
         ports:
             - 8080:80
         links:
-            - mariadb-mao-prm
+            - percona-mao-certif
         environment:
           PMA_HOST: mysql
-
-    maildev:
-        image: djfarrelly/maildev
-        container_name: sf3_maildev
-        ports:
-          - 8001:80
-
-    nginx:
-      container_name: angular_nginx
-      build: .docker/nginx
-      volumes:
-        - ${ANGULAR_APP}/dist/Angular-project:/usr/share/nginx/html
-      ports:
-        - "81:80"
-        - "443:443"
-
-    node:
-        build: .docker/node
-        container_name: angular_node_cli
-        ports:
-            - 4200:4200
-        volumes:
-            - ${ANGULAR_APP}:/home/node/app/frontend
-        tty: true
-        command:
-            - /bin/sh
-            - -c
-            - |
-                cd /home/node/app/frontend && npm install && npm start
-        expose:
-            - "4200"
 
 networks:
     default:
         external:
-            name: docap-api-client-stacks
+            name: sf4-api-platform-mirror
 
